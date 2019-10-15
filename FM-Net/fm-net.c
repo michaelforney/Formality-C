@@ -51,8 +51,7 @@ typedef struct Net {
   uint32_t nodes_len;
   uint32_t *redex;
   uint32_t redex_len;
-  uint32_t *freed;
-  uint32_t freed_len;
+  uint32_t freed;
 } Net;
 
 typedef struct Stats {
@@ -62,8 +61,9 @@ typedef struct Stats {
 
 static uint32_t alloc_node(Net *net) {
   uint32_t addr;
-  if (net->freed_len > 0) {
-    addr = net->freed[--net->freed_len];
+  if (net->freed) {
+    addr = net->freed - 1;
+    net->freed = net->nodes[addr];
   } else {
     addr = net->nodes_len;
     net->nodes_len += 4;
@@ -72,7 +72,8 @@ static uint32_t alloc_node(Net *net) {
 }
 
 static void free_node(Net *net, uint32_t addr) {
-  net->freed[net->freed_len++] = addr;
+  net->nodes[addr] = net->freed;
+  net->freed = addr + 1;
 }
 
 static void queue(Net *net, uint32_t addr) {
@@ -338,11 +339,10 @@ int main(void) {
   Net net;
   net.nodes = malloc(sizeof(uint32_t) * 200000000);
   net.redex = malloc(sizeof(uint32_t) * 10000000);
-  net.freed = malloc(sizeof(uint32_t) * 10000000);
+  net.freed = 0;
 
   net.nodes_len = 0;
   net.redex_len = 0;
-  net.freed_len = 0;
 
   memcpy(net.nodes, nodes, sizeof(nodes));
   net.nodes_len = sizeof(nodes) / sizeof(uint32_t);
