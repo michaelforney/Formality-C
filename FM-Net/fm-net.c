@@ -176,9 +176,9 @@ static void link_ports(Net *net, uint64_t a_ptrn, uint64_t b_ptrn) {
 
   // If both are main ports, add this to the list of active pairs
   if (a_type == PTR && slot_of(a_ptrn) == 0 &&
-      (b_type == NUM || (b_type == PTR && slot_of(b_ptrn) == 0)))
+      (b_type != PTR || slot_of(b_ptrn) == 0))
     net->redex[net->redex_len++] = addr_of(a_ptrn);
-  else if (b_type == PTR && slot_of(b_ptrn) == 0 && a_type == NUM)
+  else if (b_type == PTR && slot_of(b_ptrn) == 0 && a_type != PTR)
     net->redex[net->redex_len++] = addr_of(b_ptrn);
 }
 
@@ -432,7 +432,7 @@ int main(void) {
   find_redexes(&net);
   Stats stats = reduce(&net);
 
-  // Must output 44067986
+  // Must output 51325139
   printf("rewrites: %d\n", stats.rewrites);
   printf("loops: %d\n", stats.loops);
 }
