@@ -248,8 +248,8 @@ void rewrite(Net *net, u32 a_addr) {
       case FDIV: res.f = fst.f / snd.f; break;
       case FMOD: res.f = fmodf(fst.f, snd.f); break;
       case FPOW: res.f = powf(fst.f, snd.f); break;
-      case ITOF: res.f = fst.i; break;
-      case FTOI: res.i = fst.f; break;
+      case ITOF: res.f = snd.i; break;
+      case FTOI: res.i = snd.f; break;
       default:
         res.i = 0;
         printf("[ERROR]\nInvalid interaction.");
