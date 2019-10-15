@@ -100,7 +100,7 @@ u32 alloc_node(Net *net, u32 type, u32 kind) {
   net->nodes[addr * 4 + 0] = addr * 4 + 0;
   net->nodes[addr * 4 + 1] = addr * 4 + 1;
   net->nodes[addr * 4 + 2] = addr * 4 + 2;
-  net->nodes[addr * 4 + 3] = (kind << 6) + ((type & 0x7) << 3);
+  net->nodes[addr * 4 + 3] = (kind << 8) + ((type & 0x3) << 6);
   return addr;
 }
 
@@ -120,16 +120,16 @@ u32 is_free(Net *net, u32 addr) {
 }
 
 u32 is_numeric(Net *net, u32 addr, u32 slot) {
-  return (net->nodes[addr * 4 + 3] >> slot) & 1;
+  return (net->nodes[addr * 4 + 3] >> slot * 2) & 3;
 }
 
 void set_port(Net *net, u32 addr, u32 slot, u64 ptrn) {
   if (type_of(ptrn) == NUM) {
     net->nodes[addr * 4 + slot] = numb_of(ptrn);
-    net->nodes[addr * 4 + 3] = net->nodes[addr * 4 + 3] | (1 << slot);
+    net->nodes[addr * 4 + 3] |= (1 << slot * 2);
   } else {
     net->nodes[addr * 4 + slot] = ptrn;
-    net->nodes[addr * 4 + 3] = net->nodes[addr * 4 + 3] & ~(1 << slot);
+    net->nodes[addr * 4 + 3] &= ~(1 << slot * 2);
   }
 }
 
@@ -140,15 +140,15 @@ u64 get_port(Net *net, u32 addr, u32 slot) {
 
 void set_type(Net *net, u32 addr, u32 type) {
   net->nodes[addr * 4 + 3] =
-      (net->nodes[addr * 4 + 3] & ~(7 << 3)) | (type << 3);
+      (net->nodes[addr * 4 + 3] & ~(3 << 6)) | (type << 6);
 }
 
 u32 get_type(Net *net, u32 addr) {
-  return (net->nodes[addr * 4 + 3] >> 3) & 0x7;
+  return (net->nodes[addr * 4 + 3] >> 6) & 0x3;
 }
 
 u32 get_kind(Net *net, u32 addr) {
-  return net->nodes[addr * 4 + 3] >> 6;
+  return net->nodes[addr * 4 + 3] >> 8;
 }
 
 // Given a pointer to a port, returns a pointer to the opposing port
