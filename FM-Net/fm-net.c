@@ -5,9 +5,6 @@
 
 #include "nodes.h"
 
-typedef uint32_t u32;
-typedef uint64_t u64;
-
 enum {
   PTR,
   NUM,
@@ -47,55 +44,55 @@ enum {
   FTOI,
 };
 
-u64 Pointer(u32 addr, u32 port) {
-  return (u64)((addr << 2) + (port & 3));
+uint64_t Pointer(uint32_t addr, uint32_t port) {
+  return (uint64_t)((addr << 2) + (port & 3));
 }
 
-u32 addr_of(u64 ptrn) {
-  return (u32)(ptrn >> 2);
+uint32_t addr_of(uint64_t ptrn) {
+  return (uint32_t)(ptrn >> 2);
 }
 
-u32 slot_of(u64 ptrn) {
-  return (u32)(ptrn & 3);
+uint32_t slot_of(uint64_t ptrn) {
+  return (uint32_t)(ptrn & 3);
 }
 
-u64 Numeric(u32 numb) {
-  return numb | (u64)NUM << 32;
+uint64_t Numeric(uint32_t numb) {
+  return numb | (uint64_t)NUM << 32;
 }
 
-u64 Erase(void) {
-  return (u64)ERA << 32;
+uint64_t Erase(void) {
+  return (uint64_t)ERA << 32;
 }
 
-u32 numb_of(u64 ptrn) {
-  return (u32)ptrn;
+uint32_t numb_of(uint64_t ptrn) {
+  return (uint32_t)ptrn;
 }
 
-u32 type_of(u64 ptrn) {
+uint32_t type_of(uint64_t ptrn) {
   return ptrn >> 32;
 }
 
 typedef struct Node {
-  u32 port[3];
-  u32 info;
+  uint32_t port[3];
+  uint32_t info;
 } Node;
 
 typedef struct Net {
-  u32 *nodes;
-  u32 nodes_len;
-  u32 *redex;
-  u32 redex_len;
-  u32 *freed;
-  u32 freed_len;
+  uint32_t *nodes;
+  uint32_t nodes_len;
+  uint32_t *redex;
+  uint32_t redex_len;
+  uint32_t *freed;
+  uint32_t freed_len;
 } Net;
 
 typedef struct Stats {
-  u32 rewrites;
-  u32 loops;
+  uint32_t rewrites;
+  uint32_t loops;
 } Stats;
 
-u32 alloc_node(Net *net, u32 type, u32 kind) {
-  u32 addr;
+uint32_t alloc_node(Net *net, uint32_t type, uint32_t kind) {
+  uint32_t addr;
   if (net->freed_len > 0) {
     addr = net->freed[--net->freed_len];
   } else {
@@ -106,7 +103,7 @@ u32 alloc_node(Net *net, u32 type, u32 kind) {
   return addr;
 }
 
-void free_node(Net *net, u32 addr) {
+void free_node(Net *net, uint32_t addr) {
   net->nodes[addr * 4 + 0] = addr * 4 + 0;
   net->nodes[addr * 4 + 1] = addr * 4 + 1;
   net->nodes[addr * 4 + 2] = addr * 4 + 2;
@@ -114,42 +111,43 @@ void free_node(Net *net, u32 addr) {
   net->freed[net->freed_len++] = addr;
 }
 
-u32 is_free(Net *net, u32 addr) {
+uint32_t is_free(Net *net, uint32_t addr) {
   return net->nodes[addr * 4 + 0] == addr * 4 + 0 &&
          net->nodes[addr * 4 + 1] == addr * 4 + 1 &&
          net->nodes[addr * 4 + 2] == addr * 4 + 2 &&
          net->nodes[addr * 4 + 3] == 0;
 }
 
-u32 port_type(Net *net, u32 addr, u32 slot) {
+uint32_t port_type(Net *net, uint32_t addr, uint32_t slot) {
   return (net->nodes[addr * 4 + 3] >> slot * 2) & 3;
 }
 
-void set_port(Net *net, u32 addr, u32 slot, u64 ptrn) {
+void set_port(Net *net, uint32_t addr, uint32_t slot, uint64_t ptrn) {
   net->nodes[addr * 4 + slot] = ptrn;
   net->nodes[addr * 4 + 3] =
       (net->nodes[addr * 4 + 3] & ~(3 << slot * 2)) | type_of(ptrn) << slot * 2;
 }
 
-u64 get_port(Net *net, u32 addr, u32 slot) {
-  return net->nodes[addr * 4 + slot] | (u64)port_type(net, addr, slot) << 32;
+uint64_t get_port(Net *net, uint32_t addr, uint32_t slot) {
+  return net->nodes[addr * 4 + slot] | (uint64_t)port_type(net, addr, slot)
+                                           << 32;
 }
 
-void set_type(Net *net, u32 addr, u32 type) {
+void set_type(Net *net, uint32_t addr, uint32_t type) {
   net->nodes[addr * 4 + 3] =
       (net->nodes[addr * 4 + 3] & ~(3 << 6)) | (type << 6);
 }
 
-u32 get_type(Net *net, u32 addr) {
+uint32_t get_type(Net *net, uint32_t addr) {
   return (net->nodes[addr * 4 + 3] >> 6) & 0x3;
 }
 
-u32 get_kind(Net *net, u32 addr) {
+uint32_t get_kind(Net *net, uint32_t addr) {
   return net->nodes[addr * 4 + 3] >> 8;
 }
 
 // Given a pointer to a port, returns a pointer to the opposing port
-u64 enter_port(Net *net, u64 ptrn) {
+uint64_t enter_port(Net *net, uint64_t ptrn) {
   if (type_of(ptrn) != PTR) {
     printf("[ERROR]\nCan't enter a numeric/erase pointer.");
     return 0;
@@ -158,17 +156,17 @@ u64 enter_port(Net *net, u64 ptrn) {
   }
 }
 
-u32 is_redex(Net *net, u32 addr) {
-  u64 a_ptrn = Pointer(addr, 0);
-  u64 b_ptrn = enter_port(net, a_ptrn);
+uint32_t is_redex(Net *net, uint32_t addr) {
+  uint64_t a_ptrn = Pointer(addr, 0);
+  uint64_t b_ptrn = enter_port(net, a_ptrn);
   return type_of(b_ptrn) == NUM ||
          (slot_of(b_ptrn) == 0 && !is_free(net, addr));
 }
 
 // Connects two ports
-void link_ports(Net *net, u64 a_ptrn, u64 b_ptrn) {
-  u32 a_type = type_of(a_ptrn);
-  u32 b_type = type_of(b_ptrn);
+void link_ports(Net *net, uint64_t a_ptrn, uint64_t b_ptrn) {
+  uint32_t a_type = type_of(a_ptrn);
+  uint32_t b_type = type_of(b_ptrn);
 
   // Point ports to each-other
   if (a_type == PTR)
@@ -195,11 +193,11 @@ static uint32_t powi(uint32_t fst, uint32_t snd) {
 }
 
 // Rewrites an active pair
-void rewrite(Net *net, u32 a_addr) {
-  u64 b_ptrn = get_port(net, a_addr, 0);
-  u32 a_type = get_type(net, a_addr);
-  u32 a_kind = get_kind(net, a_addr);
-  u32 b_addr, b_type, b_kind;
+void rewrite(Net *net, uint32_t a_addr) {
+  uint64_t b_ptrn = get_port(net, a_addr, 0);
+  uint32_t a_type = get_type(net, a_addr);
+  uint32_t a_kind = get_kind(net, a_addr);
+  uint32_t b_addr, b_type, b_kind;
 
   switch (type_of(b_ptrn)) {
   case NUM:
@@ -209,7 +207,7 @@ void rewrite(Net *net, u32 a_addr) {
         uint32_t i;
         float f;
       } fst, snd, res;
-      u64 dst;
+      uint64_t dst;
 
       dst = enter_port(net, Pointer(a_addr, 2));
       fst.i = numb_of(b_ptrn);
@@ -260,11 +258,11 @@ void rewrite(Net *net, u32 a_addr) {
 
       // IfThenElse
     } else if (a_type == ITE) {
-      u32 cond_val = numb_of(b_ptrn) == 0;
-      u64 pair_ptr = enter_port(net, Pointer(a_addr, 1));
+      uint32_t cond_val = numb_of(b_ptrn) == 0;
+      uint64_t pair_ptr = enter_port(net, Pointer(a_addr, 1));
       set_type(net, a_addr, NOD);
       link_ports(net, Pointer(a_addr, 0), pair_ptr);
-      u64 dest_ptr = enter_port(net, Pointer(a_addr, 2));
+      uint64_t dest_ptr = enter_port(net, Pointer(a_addr, 2));
       link_ports(net, Pointer(a_addr, cond_val ? 2 : 1), dest_ptr);
       link_ports(net, Pointer(a_addr, cond_val ? 1 : 2), Erase());
 
@@ -285,11 +283,11 @@ void rewrite(Net *net, u32 a_addr) {
     if ((a_type == NOD && b_type == NOD && a_kind == b_kind) ||
         (a_type == OP1 && b_type == OP1) || (a_type == OP2 && b_type == OP2) ||
         (a_type == ITE && b_type == ITE)) {
-      u64 a_aux1_dest = enter_port(net, Pointer(a_addr, 1));
-      u64 b_aux1_dest = enter_port(net, Pointer(b_addr, 1));
+      uint64_t a_aux1_dest = enter_port(net, Pointer(a_addr, 1));
+      uint64_t b_aux1_dest = enter_port(net, Pointer(b_addr, 1));
       link_ports(net, a_aux1_dest, b_aux1_dest);
-      u64 a_aux2_dest = enter_port(net, Pointer(a_addr, 2));
-      u64 b_aux2_dest = enter_port(net, Pointer(b_addr, 2));
+      uint64_t a_aux2_dest = enter_port(net, Pointer(a_addr, 2));
+      uint64_t b_aux2_dest = enter_port(net, Pointer(b_addr, 2));
       link_ports(net, a_aux2_dest, b_aux2_dest);
       free_node(net, a_addr);
       if (a_addr != b_addr) {
@@ -300,10 +298,10 @@ void rewrite(Net *net, u32 a_addr) {
     } else if ((a_type == NOD && b_type == NOD && a_kind != b_kind) ||
                (a_type == NOD && b_type == OP2) ||
                (a_type == NOD && b_type == ITE)) {
-      u32 p_addr = alloc_node(net, b_type, b_kind);
-      u32 q_addr = alloc_node(net, b_type, b_kind);
-      u32 r_addr = alloc_node(net, a_type, a_kind);
-      u32 s_addr = alloc_node(net, a_type, a_kind);
+      uint32_t p_addr = alloc_node(net, b_type, b_kind);
+      uint32_t q_addr = alloc_node(net, b_type, b_kind);
+      uint32_t r_addr = alloc_node(net, a_type, a_kind);
+      uint32_t s_addr = alloc_node(net, a_type, a_kind);
       link_ports(net, Pointer(r_addr, 1), Pointer(p_addr, 1));
       link_ports(net, Pointer(s_addr, 1), Pointer(p_addr, 2));
       link_ports(net, Pointer(r_addr, 2), Pointer(q_addr, 1));
@@ -320,9 +318,9 @@ void rewrite(Net *net, u32 a_addr) {
       // UnaryDuplication
     } else if ((a_type == NOD && b_type == OP1) ||
                (a_type == ITE && b_type == OP1)) {
-      u32 p_addr = alloc_node(net, b_type, b_kind);
-      u32 q_addr = alloc_node(net, b_type, b_kind);
-      u32 s_addr = alloc_node(net, a_type, a_kind);
+      uint32_t p_addr = alloc_node(net, b_type, b_kind);
+      uint32_t q_addr = alloc_node(net, b_type, b_kind);
+      uint32_t s_addr = alloc_node(net, a_type, a_kind);
       link_ports(net, Pointer(p_addr, 1), enter_port(net, Pointer(b_addr, 1)));
       link_ports(net, Pointer(q_addr, 1), enter_port(net, Pointer(b_addr, 1)));
       link_ports(net, Pointer(s_addr, 1), Pointer(p_addr, 2));
@@ -358,7 +356,7 @@ Stats reduce(Net *net) {
   stats.rewrites = 0;
   stats.loops = 0;
   while (net->redex_len > 0) {
-    for (u32 i = 0, l = net->redex_len; i < l; ++i) {
+    for (uint32_t i = 0, l = net->redex_len; i < l; ++i) {
       rewrite(net, net->redex[--net->redex_len]);
       ++stats.rewrites;
     }
@@ -369,15 +367,15 @@ Stats reduce(Net *net) {
 
 void find_redexes(Net *net) {
   net->redex_len = 0;
-  for (u32 i = 0; i < net->nodes_len / 4; ++i) {
-    u64 b_ptrn = enter_port(net, Pointer(i, 0));
+  for (uint32_t i = 0; i < net->nodes_len / 4; ++i) {
+    uint64_t b_ptrn = enter_port(net, Pointer(i, 0));
     if ((type_of(b_ptrn) == NUM || addr_of(b_ptrn) >= i) && is_redex(net, i)) {
       net->redex[net->redex_len++] = i;
     }
   }
 }
 
-void print_pointer(u64 ptrn) {
+void print_pointer(uint64_t ptrn) {
   switch (type_of(ptrn)) {
   case NUM: printf("#%u", numb_of(ptrn)); break;
   case ERA: printf("-"); break;
@@ -393,12 +391,12 @@ void print_pointer(u64 ptrn) {
 }
 
 void print_net(Net *net) {
-  for (u32 i = 0; i < net->nodes_len / 4; i++) {
+  for (uint32_t i = 0; i < net->nodes_len / 4; i++) {
     if (is_free(net, i)) {
       printf("%u: ~\n", i);
     } else {
-      u32 type = get_type(net, i);
-      u32 kind = get_kind(net, i);
+      uint32_t type = get_type(net, i);
+      uint32_t kind = get_kind(net, i);
       printf("%u: ", i);
       printf("[%u:%u| ", type, kind);
       print_pointer(get_port(net, i, 0));
@@ -418,15 +416,15 @@ void print_net(Net *net) {
 
 int main(void) {
   Net net;
-  net.nodes = malloc(sizeof(u32) * 200000000);
-  net.redex = malloc(sizeof(u32) * 10000000);
-  net.freed = malloc(sizeof(u32) * 10000000);
+  net.nodes = malloc(sizeof(uint32_t) * 200000000);
+  net.redex = malloc(sizeof(uint32_t) * 10000000);
+  net.freed = malloc(sizeof(uint32_t) * 10000000);
 
   net.nodes_len = 0;
   net.redex_len = 0;
   net.freed_len = 0;
 
-  for (u32 i = 0; i < sizeof(nodes) / sizeof(u32); ++i) {
+  for (uint32_t i = 0; i < sizeof(nodes) / sizeof(uint32_t); ++i) {
     net.nodes[i] = nodes[i];
     net.nodes_len += 1;
   }
