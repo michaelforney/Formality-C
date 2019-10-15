@@ -102,9 +102,6 @@ u32 alloc_node(Net *net, u32 type, u32 kind) {
     addr = net->nodes_len / 4;
     net->nodes_len += 4;
   }
-  net->nodes[addr * 4 + 0] = addr * 4 + 0;
-  net->nodes[addr * 4 + 1] = addr * 4 + 1;
-  net->nodes[addr * 4 + 2] = addr * 4 + 2;
   net->nodes[addr * 4 + 3] = (kind << 8) + ((type & 0x3) << 6);
   return addr;
 }
@@ -187,17 +184,6 @@ void link_ports(Net *net, u64 a_ptrn, u64 b_ptrn) {
     net->redex[net->redex_len++] = addr_of(b_ptrn);
 }
 
-// Disconnects a port, causing both sides to point to themselves
-void unlink_port(Net *net, u64 a_ptrn) {
-  if (type_of(a_ptrn) == PTR) {
-    u64 b_ptrn = enter_port(net, a_ptrn);
-    if (type_of(b_ptrn) == PTR && enter_port(net, b_ptrn) == a_ptrn) {
-      set_port(net, addr_of(a_ptrn), slot_of(a_ptrn), a_ptrn);
-      set_port(net, addr_of(b_ptrn), slot_of(b_ptrn), b_ptrn);
-    }
-  }
-}
-
 static uint32_t powi(uint32_t fst, uint32_t snd) {
   uint32_t res;
 
@@ -258,15 +244,12 @@ void rewrite(Net *net, u32 a_addr) {
         break;
       }
       link_ports(net, dst, Numeric(res.i));
-      unlink_port(net, Pointer(a_addr, 0));
-      unlink_port(net, Pointer(a_addr, 2));
       free_node(net, a_addr);
 
       // BinaryOperation
     } else if (a_type == OP2) {
       set_type(net, a_addr, OP1);
       link_ports(net, Pointer(a_addr, 0), enter_port(net, Pointer(a_addr, 1)));
-      unlink_port(net, Pointer(a_addr, 1));
       link_ports(net, Pointer(a_addr, 1), b_ptrn);
 
       // NumberDuplication
@@ -281,11 +264,8 @@ void rewrite(Net *net, u32 a_addr) {
       u64 pair_ptr = enter_port(net, Pointer(a_addr, 1));
       set_type(net, a_addr, NOD);
       link_ports(net, Pointer(a_addr, 0), pair_ptr);
-      unlink_port(net, Pointer(a_addr, 1));
       u64 dest_ptr = enter_port(net, Pointer(a_addr, 2));
       link_ports(net, Pointer(a_addr, cond_val ? 2 : 1), dest_ptr);
-      if (!cond_val)
-        unlink_port(net, Pointer(a_addr, 2));
       link_ports(net, Pointer(a_addr, cond_val ? 1 : 2), Erase());
 
     } else {
@@ -311,10 +291,6 @@ void rewrite(Net *net, u32 a_addr) {
       u64 a_aux2_dest = enter_port(net, Pointer(a_addr, 2));
       u64 b_aux2_dest = enter_port(net, Pointer(b_addr, 2));
       link_ports(net, a_aux2_dest, b_aux2_dest);
-      for (u32 i = 0; i < 3; i++) {
-        unlink_port(net, Pointer(a_addr, i));
-        unlink_port(net, Pointer(b_addr, i));
-      }
       free_node(net, a_addr);
       if (a_addr != b_addr) {
         free_node(net, b_addr);
@@ -336,10 +312,6 @@ void rewrite(Net *net, u32 a_addr) {
       link_ports(net, Pointer(q_addr, 0), enter_port(net, Pointer(a_addr, 2)));
       link_ports(net, Pointer(r_addr, 0), enter_port(net, Pointer(b_addr, 1)));
       link_ports(net, Pointer(s_addr, 0), enter_port(net, Pointer(b_addr, 2)));
-      for (u32 i = 0; i < 3; i++) {
-        unlink_port(net, Pointer(a_addr, i));
-        unlink_port(net, Pointer(b_addr, i));
-      }
       free_node(net, a_addr);
       if (a_addr != b_addr) {
         free_node(net, b_addr);
@@ -358,10 +330,6 @@ void rewrite(Net *net, u32 a_addr) {
       link_ports(net, Pointer(p_addr, 0), enter_port(net, Pointer(a_addr, 1)));
       link_ports(net, Pointer(q_addr, 0), enter_port(net, Pointer(a_addr, 2)));
       link_ports(net, Pointer(s_addr, 0), enter_port(net, Pointer(b_addr, 2)));
-      for (u32 i = 0; i < 3; i++) {
-        unlink_port(net, Pointer(a_addr, i));
-        unlink_port(net, Pointer(b_addr, i));
-      }
       free_node(net, a_addr);
       if (a_addr != b_addr) {
         free_node(net, b_addr);
