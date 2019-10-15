@@ -11,6 +11,7 @@ typedef uint64_t u64;
 enum {
   PTR,
   NUM,
+  ERA,
 };
 
 enum {
@@ -59,7 +60,11 @@ u32 slot_of(u64 ptrn) {
 }
 
 u64 Numeric(u32 numb) {
-  return (u64)numb | (u64)0x100000000;
+  return numb | (u64)NUM << 32;
+}
+
+u64 Erase(void) {
+  return (u64)ERA << 32;
 }
 
 u32 numb_of(u64 ptrn) {
@@ -67,7 +72,7 @@ u32 numb_of(u64 ptrn) {
 }
 
 u32 type_of(u64 ptrn) {
-  return ptrn >= (u64)0x100000000 ? NUM : PTR;
+  return ptrn >> 32;
 }
 
 typedef struct Node {
@@ -119,23 +124,18 @@ u32 is_free(Net *net, u32 addr) {
          net->nodes[addr * 4 + 3] == 0;
 }
 
-u32 is_numeric(Net *net, u32 addr, u32 slot) {
+u32 port_type(Net *net, u32 addr, u32 slot) {
   return (net->nodes[addr * 4 + 3] >> slot * 2) & 3;
 }
 
 void set_port(Net *net, u32 addr, u32 slot, u64 ptrn) {
-  if (type_of(ptrn) == NUM) {
-    net->nodes[addr * 4 + slot] = numb_of(ptrn);
-    net->nodes[addr * 4 + 3] |= (1 << slot * 2);
-  } else {
-    net->nodes[addr * 4 + slot] = ptrn;
-    net->nodes[addr * 4 + 3] &= ~(1 << slot * 2);
-  }
+  net->nodes[addr * 4 + slot] = ptrn;
+  net->nodes[addr * 4 + 3] =
+      (net->nodes[addr * 4 + 3] & ~(3 << slot * 2)) | type_of(ptrn) << slot * 2;
 }
 
 u64 get_port(Net *net, u32 addr, u32 slot) {
-  return (u64)net->nodes[addr * 4 + slot] +
-         (is_numeric(net, addr, slot) ? (u64)0x100000000 : (u64)0);
+  return net->nodes[addr * 4 + slot] | (u64)port_type(net, addr, slot) << 32;
 }
 
 void set_type(Net *net, u32 addr, u32 type) {
@@ -153,8 +153,8 @@ u32 get_kind(Net *net, u32 addr) {
 
 // Given a pointer to a port, returns a pointer to the opposing port
 u64 enter_port(Net *net, u64 ptrn) {
-  if (type_of(ptrn) == NUM) {
-    printf("[ERROR]\nCan't enter a numeric pointer.");
+  if (type_of(ptrn) != PTR) {
+    printf("[ERROR]\nCan't enter a numeric/erase pointer.");
     return 0;
   } else {
     return get_port(net, addr_of(ptrn), slot_of(ptrn));
@@ -170,20 +170,21 @@ u32 is_redex(Net *net, u32 addr) {
 
 // Connects two ports
 void link_ports(Net *net, u64 a_ptrn, u64 b_ptrn) {
-  u32 a_numb = type_of(a_ptrn) == NUM;
-  u32 b_numb = type_of(b_ptrn) == NUM;
+  u32 a_type = type_of(a_ptrn);
+  u32 b_type = type_of(b_ptrn);
 
   // Point ports to each-other
-  if (!a_numb)
+  if (a_type == PTR)
     set_port(net, addr_of(a_ptrn), slot_of(a_ptrn), b_ptrn);
-  if (!b_numb)
+  if (b_type == PTR)
     set_port(net, addr_of(b_ptrn), slot_of(b_ptrn), a_ptrn);
 
   // If both are main ports, add this to the list of active pairs
-  if (!(a_numb && b_numb) && (a_numb || slot_of(a_ptrn) == 0) &&
-      (b_numb || slot_of(b_ptrn) == 0)) {
-    net->redex[net->redex_len++] = a_numb ? addr_of(b_ptrn) : addr_of(a_ptrn);
-  }
+  if (a_type == PTR && slot_of(a_ptrn) == 0 &&
+      (b_type == NUM || (b_type == PTR && slot_of(b_ptrn) == 0)))
+    net->redex[net->redex_len++] = addr_of(a_ptrn);
+  else if (b_type == PTR && slot_of(b_ptrn) == 0 && a_type == NUM)
+    net->redex[net->redex_len++] = addr_of(b_ptrn);
 }
 
 // Disconnects a port, causing both sides to point to themselves
@@ -210,11 +211,12 @@ static uint32_t powi(uint32_t fst, uint32_t snd) {
 // Rewrites an active pair
 void rewrite(Net *net, u32 a_addr) {
   u64 b_ptrn = get_port(net, a_addr, 0);
+  u32 a_type = get_type(net, a_addr);
+  u32 a_kind = get_kind(net, a_addr);
+  u32 b_addr, b_type, b_kind;
 
-  if (type_of(b_ptrn) == NUM) {
-    u32 a_type = get_type(net, a_addr);
-    u32 a_kind = get_kind(net, a_addr);
-
+  switch (type_of(b_ptrn)) {
+  case NUM:
     // UnaryOperation
     if (a_type == OP1) {
       union {
@@ -284,19 +286,20 @@ void rewrite(Net *net, u32 a_addr) {
       link_ports(net, Pointer(a_addr, cond_val ? 2 : 1), dest_ptr);
       if (!cond_val)
         unlink_port(net, Pointer(a_addr, 2));
-      link_ports(net, Pointer(a_addr, cond_val ? 1 : 2),
-                 Pointer(a_addr, cond_val ? 1 : 2));
+      link_ports(net, Pointer(a_addr, cond_val ? 1 : 2), Erase());
 
     } else {
       printf("[ERROR]\nInvalid interaction.");
     }
-
-  } else {
-    u32 b_addr = addr_of(b_ptrn);
-    u32 a_type = get_type(net, a_addr);
-    u32 b_type = get_type(net, b_addr);
-    u32 a_kind = get_kind(net, a_addr);
-    u32 b_kind = get_kind(net, b_addr);
+    break;
+  case ERA:
+    link_ports(net, enter_port(net, Pointer(a_addr, 1)), Erase());
+    link_ports(net, enter_port(net, Pointer(a_addr, 2)), Erase());
+    break;
+  case PTR:
+    b_addr = addr_of(b_ptrn);
+    b_type = get_type(net, b_addr);
+    b_kind = get_kind(net, b_addr);
 
     // NodeAnnihilation, UnaryAnnihilation, BinaryAnnihilation
     if ((a_type == NOD && b_type == NOD && a_kind == b_kind) ||
@@ -376,6 +379,7 @@ void rewrite(Net *net, u32 a_addr) {
     } else {
       printf("[ERROR]\nInvalid interaction.");
     }
+    break;
   }
 }
 
@@ -406,15 +410,17 @@ void find_redexes(Net *net) {
 }
 
 void print_pointer(u64 ptrn) {
-  if (type_of(ptrn) == NUM) {
-    printf("#%u", numb_of(ptrn));
-  } else {
+  switch (type_of(ptrn)) {
+  case NUM: printf("#%u", numb_of(ptrn)); break;
+  case ERA: printf("-"); break;
+  case PTR:
     printf("%u", addr_of(ptrn));
     switch (slot_of(ptrn)) {
     case 0: printf("a"); break;
     case 1: printf("b"); break;
     case 2: printf("c"); break;
     }
+    break;
   }
 }
 
@@ -434,9 +440,9 @@ void print_net(Net *net) {
       print_pointer(get_port(net, i, 2));
       printf("]");
       printf("...");
-      printf("%d ", is_numeric(net, i, 0));
-      printf("%d ", is_numeric(net, i, 1));
-      printf("%d ", is_numeric(net, i, 2));
+      printf("%d ", port_type(net, i, 0));
+      printf("%d ", port_type(net, i, 1));
+      printf("%d ", port_type(net, i, 2));
       printf("\n");
     }
   }
