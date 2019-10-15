@@ -1,7 +1,9 @@
+#include <assert.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "nodes.h"
 
@@ -44,39 +46,6 @@ enum {
   FTOI,
 };
 
-static uint64_t Pointer(uint32_t addr, uint32_t port) {
-  return (uint64_t)((addr << 2) + (port & 3));
-}
-
-static uint32_t addr_of(uint64_t ptrn) {
-  return (uint32_t)(ptrn >> 2);
-}
-
-static uint32_t slot_of(uint64_t ptrn) {
-  return (uint32_t)(ptrn & 3);
-}
-
-static uint64_t Numeric(uint32_t numb) {
-  return numb | (uint64_t)NUM << 32;
-}
-
-static uint64_t Erase(void) {
-  return (uint64_t)ERA << 32;
-}
-
-static uint32_t numb_of(uint64_t ptrn) {
-  return (uint32_t)ptrn;
-}
-
-static uint32_t type_of(uint64_t ptrn) {
-  return ptrn >> 32;
-}
-
-typedef struct Node {
-  uint32_t port[3];
-  uint32_t info;
-} Node;
-
 typedef struct Net {
   uint32_t *nodes;
   uint32_t nodes_len;
@@ -91,95 +60,24 @@ typedef struct Stats {
   uint32_t loops;
 } Stats;
 
-static uint32_t alloc_node(Net *net, uint32_t type, uint32_t kind) {
+static uint32_t alloc_node(Net *net) {
   uint32_t addr;
   if (net->freed_len > 0) {
     addr = net->freed[--net->freed_len];
   } else {
-    addr = net->nodes_len / 4;
+    addr = net->nodes_len;
     net->nodes_len += 4;
   }
-  net->nodes[addr * 4 + 3] = (kind << 8) + ((type & 0x3) << 6);
   return addr;
 }
 
 static void free_node(Net *net, uint32_t addr) {
-  net->nodes[addr * 4 + 0] = addr * 4 + 0;
-  net->nodes[addr * 4 + 1] = addr * 4 + 1;
-  net->nodes[addr * 4 + 2] = addr * 4 + 2;
-  net->nodes[addr * 4 + 3] = 0;
   net->freed[net->freed_len++] = addr;
 }
 
-static uint32_t is_free(Net *net, uint32_t addr) {
-  return net->nodes[addr * 4 + 0] == addr * 4 + 0 &&
-         net->nodes[addr * 4 + 1] == addr * 4 + 1 &&
-         net->nodes[addr * 4 + 2] == addr * 4 + 2 &&
-         net->nodes[addr * 4 + 3] == 0;
-}
-
-static uint32_t port_type(Net *net, uint32_t addr, uint32_t slot) {
-  return (net->nodes[addr * 4 + 3] >> slot * 2) & 3;
-}
-
-static void set_port(Net *net, uint32_t addr, uint32_t slot, uint64_t ptrn) {
-  net->nodes[addr * 4 + slot] = ptrn;
-  net->nodes[addr * 4 + 3] =
-      (net->nodes[addr * 4 + 3] & ~(3 << slot * 2)) | type_of(ptrn) << slot * 2;
-}
-
-static uint64_t get_port(Net *net, uint32_t addr, uint32_t slot) {
-  return net->nodes[addr * 4 + slot] | (uint64_t)port_type(net, addr, slot)
-                                           << 32;
-}
-
-static void set_type(Net *net, uint32_t addr, uint32_t type) {
-  net->nodes[addr * 4 + 3] =
-      (net->nodes[addr * 4 + 3] & ~(3 << 6)) | (type << 6);
-}
-
-static uint32_t get_type(Net *net, uint32_t addr) {
-  return (net->nodes[addr * 4 + 3] >> 6) & 0x3;
-}
-
-static uint32_t get_kind(Net *net, uint32_t addr) {
-  return net->nodes[addr * 4 + 3] >> 8;
-}
-
-// Given a pointer to a port, returns a pointer to the opposing port
-static uint64_t enter_port(Net *net, uint64_t ptrn) {
-  if (type_of(ptrn) != PTR) {
-    printf("[ERROR]\nCan't enter a numeric/erase pointer.");
-    return 0;
-  } else {
-    return get_port(net, addr_of(ptrn), slot_of(ptrn));
-  }
-}
-
-static uint32_t is_redex(Net *net, uint32_t addr) {
-  uint64_t a_ptrn = Pointer(addr, 0);
-  uint64_t b_ptrn = enter_port(net, a_ptrn);
-  return type_of(b_ptrn) == NUM ||
-         (slot_of(b_ptrn) == 0 && !is_free(net, addr));
-}
-
-// Connects two ports
-static void link_ports(Net *net, uint64_t a_ptrn, uint64_t b_ptrn) {
-  uint32_t a_type = type_of(a_ptrn);
-  uint32_t b_type = type_of(b_ptrn);
-
-  // Point ports to each-other
-  if (a_type == PTR)
-    set_port(net, addr_of(a_ptrn), slot_of(a_ptrn), b_ptrn);
-  if (b_type == PTR)
-    set_port(net, addr_of(b_ptrn), slot_of(b_ptrn), a_ptrn);
-
-  // If both are main ports, add this to the list of active pairs
-  if (a_type == PTR && slot_of(a_ptrn) == 0 &&
-      (b_type != PTR || slot_of(b_ptrn) == 0))
-    net->redex[net->redex_len++] = addr_of(a_ptrn);
-  else if (b_type == PTR && slot_of(b_ptrn) == 0 && a_type != PTR)
-    net->redex[net->redex_len++] = addr_of(b_ptrn);
+static void queue(Net *net, uint32_t addr) {
+  net->redex[net->redex_len++] = addr;
+  assert(addr % 4 == 0);
 }
 
 static uint32_t powi(uint32_t fst, uint32_t snd) {
@@ -192,27 +90,27 @@ static uint32_t powi(uint32_t fst, uint32_t snd) {
   return res;
 }
 
-// Rewrites an active pair
 static void rewrite(Net *net, uint32_t a_addr) {
-  uint64_t b_ptrn = get_port(net, a_addr, 0);
-  uint32_t a_type = get_type(net, a_addr);
-  uint32_t a_kind = get_kind(net, a_addr);
-  uint32_t b_addr, b_type, b_kind;
+  uint32_t *nodes = net->nodes;
+  union {
+    uint32_t i;
+    float f;
+  } res, fst, snd;
+  uint32_t b_addr, c_addr, d_addr;
+  uint32_t *a, *b, *c, *d;
+  int a_info, a_kind, b_info, b_kind;
 
-  switch (type_of(b_ptrn)) {
+  a = &nodes[a_addr];
+  a_info = a[3];
+  a_kind = a_info >> 6 & 3;
+
+  switch (a_info & 3) {
   case NUM:
-    // UnaryOperation
-    if (a_type == OP1) {
-      union {
-        uint32_t i;
-        float f;
-      } fst, snd, res;
-      uint64_t dst;
-
-      dst = enter_port(net, Pointer(a_addr, 2));
-      fst.i = numb_of(b_ptrn);
-      snd.i = numb_of(enter_port(net, Pointer(a_addr, 1)));
-      switch (a_kind) {
+    fst.i = a[0];
+    switch (a_kind) {
+    case OP1:
+      snd.i = a[1];
+      switch (a[3] >> 8) {
       case ADD: res.i = fst.i + snd.i; break;
       case SUB: res.i = fst.i - snd.i; break;
       case MUL: res.i = fst.i * snd.i; break;
@@ -236,115 +134,176 @@ static void rewrite(Net *net, uint32_t a_addr) {
       case FPOW: res.f = powf(fst.f, snd.f); break;
       case ITOF: res.f = snd.i; break;
       case FTOI: res.i = snd.f; break;
-      default:
-        res.i = 0;
-        printf("[ERROR]\nInvalid interaction.");
-        break;
+      /* unreachable */
+      default: res.i = 0; break;
       }
-      link_ports(net, dst, Numeric(res.i));
+      if ((a[3] >> 4 & 3) == PTR) {
+        nodes[a[2]] = res.i;
+        nodes[a[2] | 3] |= NUM << (a[2] & 3) * 2;
+        if ((a[2] & 3) == 0)
+          queue(net, a[2]);
+      }
       free_node(net, a_addr);
-
-      // BinaryOperation
-    } else if (a_type == OP2) {
-      set_type(net, a_addr, OP1);
-      link_ports(net, Pointer(a_addr, 0), enter_port(net, Pointer(a_addr, 1)));
-      link_ports(net, Pointer(a_addr, 1), b_ptrn);
-
-      // NumberDuplication
-    } else if (a_type == NOD) {
-      link_ports(net, b_ptrn, enter_port(net, Pointer(a_addr, 1)));
-      link_ports(net, b_ptrn, enter_port(net, Pointer(a_addr, 2)));
+      break;
+    case OP2:
+      a[0] = a[1];
+      a[1] = fst.i;
+      a[3] = OP1 << 6 | NUM << 2 | (a[3] >> 2 & 3) |
+             (a[3] & ~(3 << 6 | 3 << 0 | 3 << 2));
+      if ((a[3] & 3) == PTR)
+        nodes[a[0]] = a_addr;
+      if ((a[3] & 3) != PTR || (a[0] & 3) == 0)
+        queue(net, a_addr);
+      break;
+    case NOD:
+      if ((a[3] >> 2 & 3) == PTR) {
+        nodes[a[1]] = fst.i;
+        nodes[a[1] | 3] |= NUM << (a[1] & 3) * 2;
+        if ((a[1] & 3) == 0)
+          queue(net, a[1]);
+      }
+      if ((a[3] >> 4 & 3) == PTR) {
+        nodes[a[2]] = fst.i;
+        nodes[a[2] | 3] |= NUM << (a[2] & 3) * 2;
+        if ((a[2] & 3) == 0)
+          queue(net, a[2]);
+      }
       free_node(net, a_addr);
-
-      // IfThenElse
-    } else if (a_type == ITE) {
-      uint32_t cond_val = numb_of(b_ptrn) == 0;
-      uint64_t pair_ptr = enter_port(net, Pointer(a_addr, 1));
-      set_type(net, a_addr, NOD);
-      link_ports(net, Pointer(a_addr, 0), pair_ptr);
-      uint64_t dest_ptr = enter_port(net, Pointer(a_addr, 2));
-      link_ports(net, Pointer(a_addr, cond_val ? 2 : 1), dest_ptr);
-      link_ports(net, Pointer(a_addr, cond_val ? 1 : 2), Erase());
-
-    } else {
-      printf("[ERROR]\nInvalid interaction.");
+      break;
+    case ITE:
+      assert((a[3] >> 2 & 3) == PTR);
+      a[0] = a[1];
+      a[3] = NOD << 6 | (a[3] >> 2 & 3) | (a[3] & ~0xff);
+      nodes[a[0]] &= ~3;
+      if (fst.i) {
+        a[1] = a[2];
+        a[3] |= (a_info >> 2 & 3 << 2) | ERA << 4;
+        nodes[a[1]] ^= 3;
+      } else {
+        a[3] |= (a_info & 3 << 4) | ERA << 2;
+      }
+      if ((a[0] & 3) == 0)
+        queue(net, a_addr);
+      break;
+    }
+    break;
+  case PTR:
+    b_addr = a[0];
+    assert(a_addr != b_addr);
+    b = &nodes[b_addr];
+    b_info = b[3];
+    b_kind = b_info >> 6 & 3;
+    if (a_kind == b_kind && (a_kind != NOD || a[3] >> 8 == b[3] >> 8)) {
+      /* annihilation */
+      if ((a[3] >> 2 & 3) == PTR) {
+        nodes[a[1]] = b[1];
+        nodes[a[1] | 3] |= (b[3] >> 2 & 3) << (a[1] & 3) * 2;
+        if ((a[1] & 3) == 0 && ((b[3] >> 2 & 3) != PTR || (b[1] & 3) == 0))
+          queue(net, a[1]);
+      }
+      if ((b[3] >> 2 & 3) == PTR) {
+        nodes[b[1]] = a[1];
+        nodes[b[1] | 3] |= (a[3] >> 2 & 3) << (b[1] & 3) * 2;
+        if ((b[1] & 3) == 0 && (a[3] >> 2 & 3) != PTR)
+          queue(net, b[1]);
+      }
+      if ((a[3] >> 4 & 3) == PTR) {
+        nodes[a[2]] = b[2];
+        nodes[a[2] | 3] |= (b[3] >> 4 & 3) << (a[2] & 3) * 2;
+        if ((a[2] & 3) == 0 && ((b[3] >> 4 & 3) != PTR || (b[2] & 3) == 0))
+          queue(net, a[2]);
+      }
+      if ((b[3] >> 4 & 3) == PTR) {
+        nodes[b[2]] = a[2];
+        nodes[b[2] | 3] |= (a[3] >> 4 & 3) << (b[2] & 3) * 2;
+        if ((b[2] & 3) == 0 && (a[3] >> 4 & 3) != PTR)
+          queue(net, b[2]);
+      }
+      free_node(net, a_addr);
+      free_node(net, b_addr);
+    } else if (a_kind == NOD && b_kind != OP1) {
+      /* nodes/binary duplication */
+      c_addr = alloc_node(net);
+      d_addr = alloc_node(net);
+      c = &nodes[c_addr];
+      d = &nodes[d_addr];
+      a[0] = b[1];
+      a[3] = (a_info & ~0x3f) | (b_info >> 2 & 3);
+      if ((a[3] & 3) == PTR)
+        nodes[a[0]] = a_addr;
+      if ((a[3] & 3) != PTR || (a[0] & 3) == 0)
+        queue(net, a_addr);
+      b[0] = a[2];
+      b[3] = (b_info & ~0x3f) | (a_info >> 4 & 3);
+      if ((b[3] & 3) == PTR)
+        nodes[b[0]] = b_addr;
+      if ((b[3] & 3) != PTR || (b[0] & 3) == 0)
+        queue(net, b_addr);
+      c[0] = b[2];
+      c[3] = (a_info & ~0x3f) | (b_info >> 4 & 3);
+      if ((c[3] & 3) == PTR)
+        nodes[c[0]] = c_addr;
+      if ((c[3] & 3) != PTR || (c[0] & 3) == 0)
+        queue(net, c_addr);
+      d[0] = a[1];
+      d[3] = (b_info & ~0x3f) | (a_info >> 2 & 3);
+      if ((d[3] & 3) == PTR)
+        nodes[d[0]] = d_addr;
+      if ((d[3] & 3) != PTR || (d[0] & 3) == 0)
+        queue(net, d_addr);
+      a[1] = d_addr | 1;
+      b[1] = a_addr | 2;
+      c[1] = d_addr | 2;
+      d[1] = a_addr | 1;
+      a[2] = b_addr | 1;
+      b[2] = c_addr | 2;
+      c[2] = b_addr | 2;
+      d[2] = c_addr | 1;
+    } else if (a_kind != OP2 && b_kind == OP1) {
+      /* unary duplication */
+      c_addr = alloc_node(net);
+      c = &nodes[c_addr];
+      a[0] = b[2];
+      a[3] = (a_info & ~0x3f) | (b_info >> 4 & 3);
+      if ((a[3] & 3) == PTR)
+        nodes[a[0]] = a_addr;
+      if ((a[3] & 3) != PTR || (a[0] & 3) == 0)
+        queue(net, a_addr);
+      b[0] = a[1];
+      b[3] = (b_info & ~0x33) | (a_info >> 2 & 3);
+      if ((b[3] & 3) == PTR)
+        nodes[b[0]] = b_addr;
+      if ((b[3] & 3) != PTR || (b[0] & 3) == 0)
+        queue(net, b_addr);
+      c[0] = a[2];
+      c[3] = (b_info & ~0x33) | (a_info >> 4 & 3);
+      if ((c[3] & 3) == PTR)
+        nodes[c[0]] = c_addr;
+      if ((c[3] & 3) != PTR || (c[0] & 3) == 0)
+        queue(net, c_addr);
+      a[1] = b_addr | 2;
+      /* b[1] already set */
+      c[1] = b[1];
+      a[2] = c_addr | 2;
+      b[2] = a_addr | 1;
+      c[2] = a_addr | 2;
+    } else if (b_kind == NOD) {
+      /* permutations */
+      rewrite(net, b_addr);
     }
     break;
   case ERA:
-    link_ports(net, enter_port(net, Pointer(a_addr, 1)), Erase());
-    link_ports(net, enter_port(net, Pointer(a_addr, 2)), Erase());
-    break;
-  case PTR:
-    b_addr = addr_of(b_ptrn);
-    b_type = get_type(net, b_addr);
-    b_kind = get_kind(net, b_addr);
-
-    // NodeAnnihilation, UnaryAnnihilation, BinaryAnnihilation
-    if ((a_type == NOD && b_type == NOD && a_kind == b_kind) ||
-        (a_type == OP1 && b_type == OP1) || (a_type == OP2 && b_type == OP2) ||
-        (a_type == ITE && b_type == ITE)) {
-      uint64_t a_aux1_dest = enter_port(net, Pointer(a_addr, 1));
-      uint64_t b_aux1_dest = enter_port(net, Pointer(b_addr, 1));
-      link_ports(net, a_aux1_dest, b_aux1_dest);
-      uint64_t a_aux2_dest = enter_port(net, Pointer(a_addr, 2));
-      uint64_t b_aux2_dest = enter_port(net, Pointer(b_addr, 2));
-      link_ports(net, a_aux2_dest, b_aux2_dest);
-      free_node(net, a_addr);
-      if (a_addr != b_addr) {
-        free_node(net, b_addr);
-      }
-
-      // NodeDuplication, BinaryDuplication
-    } else if ((a_type == NOD && b_type == NOD && a_kind != b_kind) ||
-               (a_type == NOD && b_type == OP2) ||
-               (a_type == NOD && b_type == ITE)) {
-      uint32_t p_addr = alloc_node(net, b_type, b_kind);
-      uint32_t q_addr = alloc_node(net, b_type, b_kind);
-      uint32_t r_addr = alloc_node(net, a_type, a_kind);
-      uint32_t s_addr = alloc_node(net, a_type, a_kind);
-      link_ports(net, Pointer(r_addr, 1), Pointer(p_addr, 1));
-      link_ports(net, Pointer(s_addr, 1), Pointer(p_addr, 2));
-      link_ports(net, Pointer(r_addr, 2), Pointer(q_addr, 1));
-      link_ports(net, Pointer(s_addr, 2), Pointer(q_addr, 2));
-      link_ports(net, Pointer(p_addr, 0), enter_port(net, Pointer(a_addr, 1)));
-      link_ports(net, Pointer(q_addr, 0), enter_port(net, Pointer(a_addr, 2)));
-      link_ports(net, Pointer(r_addr, 0), enter_port(net, Pointer(b_addr, 1)));
-      link_ports(net, Pointer(s_addr, 0), enter_port(net, Pointer(b_addr, 2)));
-      free_node(net, a_addr);
-      if (a_addr != b_addr) {
-        free_node(net, b_addr);
-      }
-
-      // UnaryDuplication
-    } else if ((a_type == NOD && b_type == OP1) ||
-               (a_type == ITE && b_type == OP1)) {
-      uint32_t p_addr = alloc_node(net, b_type, b_kind);
-      uint32_t q_addr = alloc_node(net, b_type, b_kind);
-      uint32_t s_addr = alloc_node(net, a_type, a_kind);
-      link_ports(net, Pointer(p_addr, 1), enter_port(net, Pointer(b_addr, 1)));
-      link_ports(net, Pointer(q_addr, 1), enter_port(net, Pointer(b_addr, 1)));
-      link_ports(net, Pointer(s_addr, 1), Pointer(p_addr, 2));
-      link_ports(net, Pointer(s_addr, 2), Pointer(q_addr, 2));
-      link_ports(net, Pointer(p_addr, 0), enter_port(net, Pointer(a_addr, 1)));
-      link_ports(net, Pointer(q_addr, 0), enter_port(net, Pointer(a_addr, 2)));
-      link_ports(net, Pointer(s_addr, 0), enter_port(net, Pointer(b_addr, 2)));
-      free_node(net, a_addr);
-      if (a_addr != b_addr) {
-        free_node(net, b_addr);
-      }
-
-      // Permutations
-    } else if (a_type == OP1 && b_type == NOD) {
-      rewrite(net, b_addr);
-    } else if (a_type == OP2 && b_type == NOD) {
-      rewrite(net, b_addr);
-    } else if (a_type == ITE && b_type == NOD) {
-      rewrite(net, b_addr);
-
-      // InvalidInteraction
-    } else {
-      printf("[ERROR]\nInvalid interaction.");
+    if ((a[3] >> 2 & 3) == PTR) {
+      nodes[a[1] | 3] |= ERA << (a[1] & 3) * 2;
+      if ((a[1] & 3) == 0)
+        queue(net, a[1]);
     }
+    if ((a[3] >> 4 & 3) == PTR) {
+      nodes[a[2] | 3] |= ERA << (a[2] & 3) * 2;
+      if ((a[2] & 3) == 0)
+        queue(net, a[2]);
+    }
+    free_node(net, a_addr);
     break;
   }
 }
@@ -366,51 +325,12 @@ static Stats reduce(Net *net) {
 }
 
 static void find_redexes(Net *net) {
-  net->redex_len = 0;
-  for (uint32_t i = 0; i < net->nodes_len / 4; ++i) {
-    uint64_t b_ptrn = enter_port(net, Pointer(i, 0));
-    if ((type_of(b_ptrn) == NUM || addr_of(b_ptrn) >= i) && is_redex(net, i)) {
-      net->redex[net->redex_len++] = i;
-    }
-  }
-}
+  uint32_t i;
 
-static void print_pointer(uint64_t ptrn) {
-  switch (type_of(ptrn)) {
-  case NUM: printf("#%u", numb_of(ptrn)); break;
-  case ERA: printf("-"); break;
-  case PTR:
-    printf("%u", addr_of(ptrn));
-    switch (slot_of(ptrn)) {
-    case 0: printf("a"); break;
-    case 1: printf("b"); break;
-    case 2: printf("c"); break;
-    }
-    break;
-  }
-}
-
-static void print_net(Net *net) {
-  for (uint32_t i = 0; i < net->nodes_len / 4; i++) {
-    if (is_free(net, i)) {
-      printf("%u: ~\n", i);
-    } else {
-      uint32_t type = get_type(net, i);
-      uint32_t kind = get_kind(net, i);
-      printf("%u: ", i);
-      printf("[%u:%u| ", type, kind);
-      print_pointer(get_port(net, i, 0));
-      printf(" ");
-      print_pointer(get_port(net, i, 1));
-      printf(" ");
-      print_pointer(get_port(net, i, 2));
-      printf("]");
-      printf("...");
-      printf("%d ", port_type(net, i, 0));
-      printf("%d ", port_type(net, i, 1));
-      printf("%d ", port_type(net, i, 2));
-      printf("\n");
-    }
+  for (i = 0; i < net->nodes_len; i += 4) {
+    if (net->nodes[i | 3] & 1 ||
+        ((net->nodes[i] & 3) == 0 && net->nodes[i] >= i))
+      queue(net, i);
   }
 }
 
@@ -424,10 +344,8 @@ int main(void) {
   net.redex_len = 0;
   net.freed_len = 0;
 
-  for (uint32_t i = 0; i < sizeof(nodes) / sizeof(uint32_t); ++i) {
-    net.nodes[i] = nodes[i];
-    net.nodes_len += 1;
-  }
+  memcpy(net.nodes, nodes, sizeof(nodes));
+  net.nodes_len = sizeof(nodes) / sizeof(uint32_t);
 
   find_redexes(&net);
   Stats stats = reduce(&net);
