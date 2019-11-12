@@ -1,11 +1,8 @@
 #include <assert.h>
 #include <math.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#include "nodes.h"
+#include "fm-net.h"
 
 enum {
   PTR,
@@ -45,19 +42,6 @@ enum {
   ITOF,
   FTOI,
 };
-
-typedef struct Net {
-  uint64_t *nodes;
-  size_t nodes_len;
-  uint64_t *redex;
-  size_t redex_len;
-  size_t freed;
-} Net;
-
-typedef struct Stats {
-  uint32_t rewrites;
-  uint32_t loops;
-} Stats;
 
 static uint64_t alloc_node(Net *net) {
   uint64_t addr;
@@ -311,7 +295,7 @@ static void rewrite(Net *net, uint64_t a_addr) {
 
 // Rewrites active pairs until none is left, reducing the graph to normal form
 // This could be performed in parallel. Unreachable data is freed automatically.
-static Stats reduce(Net *net) {
+Stats net_reduce_strict(Net *net) {
   Stats stats;
   stats.rewrites = 0;
   stats.loops = 0;
@@ -325,7 +309,7 @@ static Stats reduce(Net *net) {
   return stats;
 }
 
-static void find_redexes(Net *net) {
+void net_find_redexes(Net *net) {
   size_t i;
 
   for (i = 0; i < net->nodes_len; i += 4) {
@@ -333,24 +317,4 @@ static void find_redexes(Net *net) {
         ((net->nodes[i] & 3) == 0 && net->nodes[i] >= i))
       queue(net, i);
   }
-}
-
-int main(void) {
-  Net net;
-  net.nodes = malloc(sizeof(uint64_t) * 200000000);
-  net.redex = malloc(sizeof(uint64_t) * 10000000);
-  net.freed = 0;
-
-  net.nodes_len = 0;
-  net.redex_len = 0;
-
-  memcpy(net.nodes, nodes, sizeof(nodes));
-  net.nodes_len = sizeof(nodes) / sizeof(nodes[0]);
-
-  find_redexes(&net);
-  Stats stats = reduce(&net);
-
-  // Must output 51325139
-  printf("rewrites: %d\n", stats.rewrites);
-  printf("loops: %d\n", stats.loops);
 }
