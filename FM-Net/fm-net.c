@@ -47,11 +47,11 @@ enum {
 };
 
 typedef struct Net {
-  uint32_t *nodes;
-  uint32_t nodes_len;
-  uint32_t *redex;
-  uint32_t redex_len;
-  uint32_t freed;
+  uint64_t *nodes;
+  size_t nodes_len;
+  uint64_t *redex;
+  size_t redex_len;
+  size_t freed;
 } Net;
 
 typedef struct Stats {
@@ -59,8 +59,8 @@ typedef struct Stats {
   uint32_t loops;
 } Stats;
 
-static uint32_t alloc_node(Net *net) {
-  uint32_t addr;
+static uint64_t alloc_node(Net *net) {
+  uint64_t addr;
   if (net->freed) {
     addr = net->freed - 1;
     net->freed = net->nodes[addr];
@@ -71,18 +71,18 @@ static uint32_t alloc_node(Net *net) {
   return addr;
 }
 
-static void free_node(Net *net, uint32_t addr) {
+static void free_node(Net *net, uint64_t addr) {
   net->nodes[addr] = net->freed;
   net->freed = addr + 1;
 }
 
-static void queue(Net *net, uint32_t addr) {
+static void queue(Net *net, uint64_t addr) {
   net->redex[net->redex_len++] = addr;
   assert(addr % 4 == 0);
 }
 
-static uint32_t powi(uint32_t fst, uint32_t snd) {
-  uint32_t res;
+static uint64_t powi(uint64_t fst, uint64_t snd) {
+  uint64_t res;
 
   for (res = 1; snd; snd >>= 1, fst *= fst) {
     if (snd & 1)
@@ -91,14 +91,14 @@ static uint32_t powi(uint32_t fst, uint32_t snd) {
   return res;
 }
 
-static void rewrite(Net *net, uint32_t a_addr) {
-  uint32_t *nodes = net->nodes;
+static void rewrite(Net *net, uint64_t a_addr) {
+  uint64_t *nodes = net->nodes;
   union {
-    uint32_t i;
-    float f;
+    uint64_t i;
+    double f;
   } res, fst, snd;
-  uint32_t b_addr, c_addr, d_addr;
-  uint32_t *a, *b, *c, *d;
+  uint64_t b_addr, c_addr, d_addr;
+  uint64_t *a, *b, *c, *d;
   int a_info, a_kind, b_info, b_kind;
 
   a = &nodes[a_addr];
@@ -316,7 +316,7 @@ static Stats reduce(Net *net) {
   stats.rewrites = 0;
   stats.loops = 0;
   while (net->redex_len > 0) {
-    for (uint32_t i = 0, l = net->redex_len; i < l; ++i) {
+    for (size_t i = 0, l = net->redex_len; i < l; ++i) {
       rewrite(net, net->redex[--net->redex_len]);
       ++stats.rewrites;
     }
@@ -326,7 +326,7 @@ static Stats reduce(Net *net) {
 }
 
 static void find_redexes(Net *net) {
-  uint32_t i;
+  size_t i;
 
   for (i = 0; i < net->nodes_len; i += 4) {
     if (net->nodes[i | 3] & 1 ||
@@ -337,15 +337,15 @@ static void find_redexes(Net *net) {
 
 int main(void) {
   Net net;
-  net.nodes = malloc(sizeof(uint32_t) * 200000000);
-  net.redex = malloc(sizeof(uint32_t) * 10000000);
+  net.nodes = malloc(sizeof(uint64_t) * 200000000);
+  net.redex = malloc(sizeof(uint64_t) * 10000000);
   net.freed = 0;
 
   net.nodes_len = 0;
   net.redex_len = 0;
 
   memcpy(net.nodes, nodes, sizeof(nodes));
-  net.nodes_len = sizeof(nodes) / sizeof(uint32_t);
+  net.nodes_len = sizeof(nodes) / sizeof(nodes[0]);
 
   find_redexes(&net);
   Stats stats = reduce(&net);

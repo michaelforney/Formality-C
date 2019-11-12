@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-static const uint32_t nodes[] = {
+static const uint64_t nodes[] = {
   2, 8466, 0, 0,
   8, 164, 8464, 0,
   4, 24, 156, 0,
