@@ -115,8 +115,8 @@ static void rewrite(Net *net, uint64_t a_addr) {
       case FSUB: res.f = fst.f - snd.f; break;
       case FMUL: res.f = fst.f * snd.f; break;
       case FDIV: res.f = fst.f / snd.f; break;
-      case FMOD: res.f = fmodf(fst.f, snd.f); break;
-      case FPOW: res.f = powf(fst.f, snd.f); break;
+      case FMOD: res.f = fmod(fst.f, snd.f); break;
+      case FPOW: res.f = pow(fst.f, snd.f); break;
       case ITOF: res.f = snd.i; break;
       case FTOI: res.i = snd.f; break;
       /* unreachable */
