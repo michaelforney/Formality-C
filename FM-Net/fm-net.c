@@ -90,6 +90,8 @@ uint64_t _popcnt(uint64_t a, uint64_t b) { return __builtin_popcountll(b); }
 uint64_t _shl(uint64_t a, uint64_t b) { return a << b; }
 uint64_t _shr(uint64_t a, uint64_t b) { return a >> b; }
 int64_t _shr_s(int64_t a, uint64_t b) { return a >> b; }
+uint64_t _rotl(uint64_t a, uint64_t b) { return a << (b & 63) | a >> (-b & 63); }
+uint64_t _rotr(uint64_t a, uint64_t b) { return a >> (b & 63) | a << (-b & 63); }
 uint64_t _and(uint64_t a, uint64_t b) { return a & b; }
 uint64_t _or(uint64_t a, uint64_t b) { return a | b; }
 uint64_t _xor(uint64_t a, uint64_t b) { return a ^ b; }
@@ -124,17 +126,6 @@ int64_t _ftos(double a, double b) { return (int64_t)b; }
 uint64_t _ftou(double a, double b) { return (uint64_t)b; }
 double _stof(int64_t a, int64_t b) { return (double)b; }
 double _utof(uint64_t a, uint64_t b) { return (double)b; }
-
-uint64_t _rotl(uint64_t a, uint64_t b) {
-  const uint64_t mask = CHAR_BIT*sizeof(b) - 1;
-  b &= mask;
-  return (a << b) | (a >> ((-b) & mask));
-}
-uint64_t _rotr(uint64_t a, uint64_t b) {
-  const uint64_t mask = CHAR_BIT*sizeof(b) - 1;
-  b &= mask;
-  return (a >> b) | (a << ((-b) & 63));
-}
 
 static uint64_t alloc_node(Net *net) {
   uint64_t addr;
