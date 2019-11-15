@@ -4,7 +4,6 @@
 #include <limits.h>
 
 #include "fm-net.h"
-//#include "emscripten.h"
 
 enum {
   PTR,
@@ -139,15 +138,6 @@ uint64_t _rotr(uint64_t a, uint64_t b) {
   b &= mask;
   return (a >> b) | (a << ((-b) & 63));
 }
-//static uint64_t powi(uint64_t fst, uint64_t snd) {
-//  uint64_t res;
-//
-//  for (res = 1; snd; snd >>= 1, fst *= fst) {
-//    if (snd & 1)
-//      res *= fst;
-//  }
-//  return res;
-//}
 
 static uint64_t alloc_node(Net *net) {
   uint64_t addr;
