@@ -74,58 +74,58 @@ enum {
   UTOF     // unsigned i64 to f64
 };
 
-uint64_t _eq(uint64_t a, uint64_t b) { return a == b; }
-uint64_t _ne(uint64_t a, uint64_t b) { return a != b; }
-uint64_t _lt_s(int64_t a, int64_t b) { return a < b; }
-uint64_t _gt_s(int64_t a, int64_t b) { return a > b; }
-uint64_t _le_s(int64_t a, int64_t b) { return a <= b; }
-uint64_t _ge_s(int64_t a, int64_t b) { return a >= b; }
-uint64_t _lt_u(uint64_t a, uint64_t b) { return a < b; }
-uint64_t _gt_u(uint64_t a, uint64_t b) { return a > b; }
-uint64_t _le_u(uint64_t a, uint64_t b) { return a <= b; }
-uint64_t _ge_u(uint64_t a, uint64_t b) { return a >= b; }
-uint64_t _clz(uint64_t a, uint64_t b) { return __builtin_clzll(b); }
-uint64_t _ctz(uint64_t a, uint64_t b) { return __builtin_ctzll(b); }
-uint64_t _popcnt(uint64_t a, uint64_t b) { return __builtin_popcountll(b); }
-uint64_t _shl(uint64_t a, uint64_t b) { return a << b; }
-uint64_t _shr(uint64_t a, uint64_t b) { return a >> b; }
-int64_t _shr_s(int64_t a, uint64_t b) { return a >> b; }
-uint64_t _rotl(uint64_t a, uint64_t b) { return a << (b & 63) | a >> (-b & 63); }
-uint64_t _rotr(uint64_t a, uint64_t b) { return a >> (b & 63) | a << (-b & 63); }
-uint64_t _and(uint64_t a, uint64_t b) { return a & b; }
-uint64_t _or(uint64_t a, uint64_t b) { return a | b; }
-uint64_t _xor(uint64_t a, uint64_t b) { return a ^ b; }
-uint64_t _add(uint64_t a, uint64_t b) { return a + b; }
-uint64_t _sub(uint64_t a, uint64_t b) { return a - b; }
-uint64_t _mul(uint64_t a, uint64_t b) { return a * b; }
-int64_t _div_s(int64_t a, int64_t b) { return a / b; }
-uint64_t _div_u(uint64_t a, uint64_t b) { return a / b; }
-int64_t _rem_s(int64_t a, int64_t b) { return a % b; }
-uint64_t _rem_u(uint64_t a, uint64_t b) { return a % b; }
-double _fabs(double a, double b) { return fabs(b); }
-double _fneg(double a, double b) { return -1 * b; }
-double _fceil(double a, double b) { return ceil(b); }
-double _ffloor(double a, double b) { return floor(b); }
-double _ftrunc(double a, double b) { return trunc(b); }
-double _fnrst(double a, double b) { return round(b); }
-double _fsqrt(double a, double b) { return sqrt(b); }
-double _fadd(double a, double b) { return a + b; }
-double _fsub(double a, double b) { return a - b; }
-double _fmul(double a, double b) { return a * b; }
-double _fdiv(double a, double b) { return a / b; }
-double _fmin(double a, double b) { return fmin(a, b); }
-double _fmax(double a, double b) { return fmax(a, b); }
-double _fcpysgn(double a, double b) { return copysign(a, b); }
-uint64_t _feq(double a, double b) { return a == b; }
-uint64_t _fne(double a, double b) { return a != b; }
-uint64_t _flt(double a, double b) { return isless(a, b); }
-uint64_t _fgt(double a, double b) { return isgreater(a, b); }
-uint64_t _fle(double a, double b) { return islessequal(a, b); }
-uint64_t _fge(double a, double b) { return isgreaterequal(a, b); }
-int64_t _ftos(double a, double b) { return (int64_t)b; }
-uint64_t _ftou(double a, double b) { return (uint64_t)b; }
-double _stof(int64_t a, int64_t b) { return (double)b; }
-double _utof(uint64_t a, uint64_t b) { return (double)b; }
+uint64_t op_eq(uint64_t a, uint64_t b) { return a == b; }
+uint64_t op_ne(uint64_t a, uint64_t b) { return a != b; }
+uint64_t op_lt_s(int64_t a, int64_t b) { return a < b; }
+uint64_t op_gt_s(int64_t a, int64_t b) { return a > b; }
+uint64_t op_le_s(int64_t a, int64_t b) { return a <= b; }
+uint64_t op_ge_s(int64_t a, int64_t b) { return a >= b; }
+uint64_t op_lt_u(uint64_t a, uint64_t b) { return a < b; }
+uint64_t op_gt_u(uint64_t a, uint64_t b) { return a > b; }
+uint64_t op_le_u(uint64_t a, uint64_t b) { return a <= b; }
+uint64_t op_ge_u(uint64_t a, uint64_t b) { return a >= b; }
+uint64_t op_clz(uint64_t a, uint64_t b) { return __builtin_clzll(b); }
+uint64_t op_ctz(uint64_t a, uint64_t b) { return __builtin_ctzll(b); }
+uint64_t op_popcnt(uint64_t a, uint64_t b) { return __builtin_popcountll(b); }
+uint64_t op_shl(uint64_t a, uint64_t b) { return a << b; }
+uint64_t op_shr(uint64_t a, uint64_t b) { return a >> b; }
+int64_t op_shr_s(int64_t a, uint64_t b) { return a >> b; }
+uint64_t op_rotl(uint64_t a, uint64_t b) { return a << (b & 63) | a >> (-b & 63); }
+uint64_t op_rotr(uint64_t a, uint64_t b) { return a >> (b & 63) | a << (-b & 63); }
+uint64_t op_and(uint64_t a, uint64_t b) { return a & b; }
+uint64_t op_or(uint64_t a, uint64_t b) { return a | b; }
+uint64_t op_xor(uint64_t a, uint64_t b) { return a ^ b; }
+uint64_t op_add(uint64_t a, uint64_t b) { return a + b; }
+uint64_t op_sub(uint64_t a, uint64_t b) { return a - b; }
+uint64_t op_mul(uint64_t a, uint64_t b) { return a * b; }
+int64_t op_div_s(int64_t a, int64_t b) { return a / b; }
+uint64_t op_div_u(uint64_t a, uint64_t b) { return a / b; }
+int64_t op_rem_s(int64_t a, int64_t b) { return a % b; }
+uint64_t op_rem_u(uint64_t a, uint64_t b) { return a % b; }
+double op_fabs(double a, double b) { return fabs(b); }
+double op_fneg(double a, double b) { return -1 * b; }
+double op_fceil(double a, double b) { return ceil(b); }
+double op_ffloor(double a, double b) { return floor(b); }
+double op_ftrunc(double a, double b) { return trunc(b); }
+double op_fnrst(double a, double b) { return round(b); }
+double op_fsqrt(double a, double b) { return sqrt(b); }
+double op_fadd(double a, double b) { return a + b; }
+double op_fsub(double a, double b) { return a - b; }
+double op_fmul(double a, double b) { return a * b; }
+double op_fdiv(double a, double b) { return a / b; }
+double op_fmin(double a, double b) { return fmin(a, b); }
+double op_fmax(double a, double b) { return fmax(a, b); }
+double op_fcpysgn(double a, double b) { return copysign(a, b); }
+uint64_t op_feq(double a, double b) { return a == b; }
+uint64_t op_fne(double a, double b) { return a != b; }
+uint64_t op_flt(double a, double b) { return isless(a, b); }
+uint64_t op_fgt(double a, double b) { return isgreater(a, b); }
+uint64_t op_fle(double a, double b) { return islessequal(a, b); }
+uint64_t op_fge(double a, double b) { return isgreaterequal(a, b); }
+int64_t op_ftos(double a, double b) { return (int64_t)b; }
+uint64_t op_ftou(double a, double b) { return (uint64_t)b; }
+double op_stof(int64_t a, int64_t b) { return (double)b; }
+double op_utof(uint64_t a, uint64_t b) { return (double)b; }
 
 static uint64_t alloc_node(Net *net) {
   uint64_t addr;
@@ -171,59 +171,59 @@ static void rewrite(Net *net, uint64_t a_addr) {
     case OP1:
       snd.u = a[1];
     switch (a[3] >> 8) {
-      case EQ:      res.u = _eq(fst.u, snd.u); break;
-      case NE:      res.u = _ne(fst.u, snd.u); break;
-      case LT_S:    res.s = _lt_s(fst.s, snd.s); break;
-      case LT_U:    res.u = _lt_u(fst.u, snd.u); break;
-      case GT_S:    res.s = _gt_s(fst.s, snd.s); break;
-      case GT_U:    res.u = _gt_u(fst.u, snd.u); break;
-      case LE_S:    res.u = _le_s(fst.s, snd.s); break;
-      case LE_U:    res.u = _le_u(fst.u, snd.u); break;
-      case GE_S:    res.u = _ge_s(fst.u, snd.u); break;
-      case GE_U:    res.u = _ge_u(fst.u, snd.u); break;
-      case CLZ:     res.u = _clz(fst.u, snd.u); break;
-      case CTZ:     res.u = _ctz(fst.u, snd.u); break;
-      case POPCNT:  res.u = _popcnt(fst.u, snd.u); break;
-      case SHL:     res.u = _shl(fst.u, snd.u); break;
-      case SHR:     res.u = _shr(fst.u, snd.u); break;
-      case SHR_S:   res.s = _shr_s(fst.s, snd.u); break;
-      case ROTL:    res.u = _rotl(fst.u, snd.u); break;
-      case ROTR:    res.u = _rotr(fst.u, snd.u); break;
-      case AND:     res.u = _and(fst.u, snd.u); break;
-      case  OR:     res.u = _or(fst.u, snd.u); break;
-      case XOR:     res.u = _xor(fst.u, snd.u); break;
-      case ADD:     res.u = _add(fst.u, snd.u); break;
-      case SUB:     res.u = _sub(fst.u, snd.u); break;
-      case MUL:     res.u = _mul(fst.u, snd.u); break;
-      case DIV_S:   res.s = _div_s(fst.s, snd.s); break;
-      case DIV_U:   res.u = _div_u(fst.u, snd.u); break;
-      case REM_S:   res.s = _rem_s(fst.s, snd.s); break;
-      case REM_U:   res.u = _rem_u(fst.u, snd.u); break;
-      case FABS:    res.f = _fabs(fst.f, snd.f); break;
-      case FNEG:    res.f = _fneg(fst.f, snd.f); break;
-      case FCEIL:   res.f = _fceil(fst.f, snd.f); break;
-      case FFLOOR:  res.f = _ffloor(fst.f, snd.f); break;
-      case FTRUNC:  res.f = _ftrunc(fst.f, snd.f); break;
-      case FNRST:   res.f = _fnrst(fst.f, snd.f); break;
-      case FSQRT:   res.f = _fsqrt(fst.f, snd.f); break;
-      case FADD:    res.f = _fadd(fst.f, snd.f); break;
-      case FSUB:    res.f = _fsub(fst.f, snd.f); break;
-      case FMUL:    res.f = _fmul(fst.f, snd.f); break;
-      case FDIV:    res.f = _fdiv(fst.f, snd.f); break;
-      case FMIN:    res.f = _fmin(fst.f, snd.f); break;
-      case FMAX:    res.f = _fmax(fst.f, snd.f); break;
-      case FCPYSGN: res.f = _fcpysgn(fst.f, snd.f); break;
-      case FEQ:     res.u = _fne(fst.f, snd.f); break;
-      case FNE:     res.u = _fne(fst.f, snd.f); break;
-      case FLT:     res.u = _flt(fst.f, snd.f); break;
-      case FGT:     res.u = _fgt(fst.f, snd.f); break;
-      case FLE:     res.u = _fle(fst.f, snd.f); break;
-      case FGE:     res.u = _fge(fst.f, snd.f); break;
+      case EQ:      res.u = op_eq(fst.u, snd.u); break;
+      case NE:      res.u = op_ne(fst.u, snd.u); break;
+      case LT_S:    res.s = op_lt_s(fst.s, snd.s); break;
+      case LT_U:    res.u = op_lt_u(fst.u, snd.u); break;
+      case GT_S:    res.s = op_gt_s(fst.s, snd.s); break;
+      case GT_U:    res.u = op_gt_u(fst.u, snd.u); break;
+      case LE_S:    res.u = op_le_s(fst.s, snd.s); break;
+      case LE_U:    res.u = op_le_u(fst.u, snd.u); break;
+      case GE_S:    res.u = op_ge_s(fst.u, snd.u); break;
+      case GE_U:    res.u = op_ge_u(fst.u, snd.u); break;
+      case CLZ:     res.u = op_clz(fst.u, snd.u); break;
+      case CTZ:     res.u = op_ctz(fst.u, snd.u); break;
+      case POPCNT:  res.u = op_popcnt(fst.u, snd.u); break;
+      case SHL:     res.u = op_shl(fst.u, snd.u); break;
+      case SHR:     res.u = op_shr(fst.u, snd.u); break;
+      case SHR_S:   res.s = op_shr_s(fst.s, snd.u); break;
+      case ROTL:    res.u = op_rotl(fst.u, snd.u); break;
+      case ROTR:    res.u = op_rotr(fst.u, snd.u); break;
+      case AND:     res.u = op_and(fst.u, snd.u); break;
+      case  OR:     res.u = op_or(fst.u, snd.u); break;
+      case XOR:     res.u = op_xor(fst.u, snd.u); break;
+      case ADD:     res.u = op_add(fst.u, snd.u); break;
+      case SUB:     res.u = op_sub(fst.u, snd.u); break;
+      case MUL:     res.u = op_mul(fst.u, snd.u); break;
+      case DIV_S:   res.s = op_div_s(fst.s, snd.s); break;
+      case DIV_U:   res.u = op_div_u(fst.u, snd.u); break;
+      case REM_S:   res.s = op_rem_s(fst.s, snd.s); break;
+      case REM_U:   res.u = op_rem_u(fst.u, snd.u); break;
+      case FABS:    res.f = op_fabs(fst.f, snd.f); break;
+      case FNEG:    res.f = op_fneg(fst.f, snd.f); break;
+      case FCEIL:   res.f = op_fceil(fst.f, snd.f); break;
+      case FFLOOR:  res.f = op_ffloor(fst.f, snd.f); break;
+      case FTRUNC:  res.f = op_ftrunc(fst.f, snd.f); break;
+      case FNRST:   res.f = op_fnrst(fst.f, snd.f); break;
+      case FSQRT:   res.f = op_fsqrt(fst.f, snd.f); break;
+      case FADD:    res.f = op_fadd(fst.f, snd.f); break;
+      case FSUB:    res.f = op_fsub(fst.f, snd.f); break;
+      case FMUL:    res.f = op_fmul(fst.f, snd.f); break;
+      case FDIV:    res.f = op_fdiv(fst.f, snd.f); break;
+      case FMIN:    res.f = op_fmin(fst.f, snd.f); break;
+      case FMAX:    res.f = op_fmax(fst.f, snd.f); break;
+      case FCPYSGN: res.f = op_fcpysgn(fst.f, snd.f); break;
+      case FEQ:     res.u = op_fne(fst.f, snd.f); break;
+      case FNE:     res.u = op_fne(fst.f, snd.f); break;
+      case FLT:     res.u = op_flt(fst.f, snd.f); break;
+      case FGT:     res.u = op_fgt(fst.f, snd.f); break;
+      case FLE:     res.u = op_fle(fst.f, snd.f); break;
+      case FGE:     res.u = op_fge(fst.f, snd.f); break;
       //case EXT32_S:
-      case FTOS:    res.s = _ftos(fst.f, snd.f); break;
-      case FTOU:    res.u = _ftou(fst.f, snd.f); break;
-      case STOF:    res.f = _stof(fst.s, snd.s); break;
-      case UTOF:    res.f = _utof(fst.u, snd.u); break;
+      case FTOS:    res.s = op_ftos(fst.f, snd.f); break;
+      case FTOU:    res.u = op_ftou(fst.f, snd.f); break;
+      case STOF:    res.f = op_stof(fst.s, snd.s); break;
+      case UTOF:    res.f = op_utof(fst.u, snd.u); break;
       /* unreachable */
       default: res.u = 0; break;
       }
