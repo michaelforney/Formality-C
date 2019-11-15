@@ -19,16 +19,16 @@ enum {
 };
 
 enum {
-  EQ,     // equality
-  NE,     // not-equal
-  LT_S,   // signed less-than
-  LT_U,   // unsigned less-than
-  GT_S,   // signed greater-than
-  GT_U,   // unsigned greater-than
-  LE_S,   // signed less-than-or-equal
-  LE_U,   // unsigned less-than-or-equal
-  GE_S,   // signed greater-than-or-equal
-  GE_U,   // unsigned greater-than-or-equal
+  EQ,      // equality
+  NE,      // not-equal
+  LT_S,    // signed less-than
+  LT_U,    // unsigned less-than
+  GT_S,    // signed greater-than
+  GT_U,    // unsigned greater-than
+  LE_S,    // signed less-than-or-equal
+  LE_U,    // unsigned less-than-or-equal
+  GE_S,    // signed greater-than-or-equal
+  GE_U,    // unsigned greater-than-or-equal
   CLZ,     // count leading zeros, unary
   CTZ,     // count trailing zeros, unary
   POPCNT,  // count number of 1 bits, unary
@@ -86,7 +86,7 @@ uint64_t _le_u(uint64_t a, uint64_t b) { return a <= b; }
 uint64_t _ge_u(uint64_t a, uint64_t b) { return a >= b; }
 uint64_t _clz(uint64_t a, uint64_t b) { return __builtin_clzll(b); }
 uint64_t _ctz(uint64_t a, uint64_t b) { return __builtin_ctzll(b); }
-uint64_t _popcnt(uint64_t a,uint64_t b) { return __builtin_popcountll(b); }
+uint64_t _popcnt(uint64_t a, uint64_t b) { return __builtin_popcountll(b); }
 uint64_t _shl(uint64_t a, uint64_t b) { return a << b; }
 uint64_t _shr(uint64_t a, uint64_t b) { return a >> b; }
 int64_t _shr_s(int64_t a, uint64_t b) { return a >> b; }
@@ -111,21 +111,21 @@ double _fadd(double a, double b) { return a + b; }
 double _fsub(double a, double b) { return a - b; }
 double _fmul(double a, double b) { return a * b; }
 double _fdiv(double a, double b) { return a / b; }
-double _fmin(double a, double b) { return fmin(a,b); }
-double _fmax(double a, double b) { return fmax(a,b); }
-double _fcpysgn(double a, double b) { return copysign(a,b); }
+double _fmin(double a, double b) { return fmin(a, b); }
+double _fmax(double a, double b) { return fmax(a, b); }
+double _fcpysgn(double a, double b) { return copysign(a, b); }
 uint64_t _feq(double a, double b) { return a == b; }
-uint64_t _flt(double a, double b) { return isless(a,b); }
-uint64_t _fgt(double a, double b) { return isgreater(a,b); }
-uint64_t _fle(double a, double b) { return islessequal(a,b); }
-uint64_t _fge(double a, double b) { return isgreaterequal(a,b); }
-int64_t _ftos(double a, double b) { return (int64_t) b; }
-uint64_t _ftou(double a, double b) { return (uint64_t) b; }
-double _stof(int64_t a, int64_t b) { return (double) b; }
-double _utof(uint64_t a, uint64_t b) { return (double) b; }
+uint64_t _flt(double a, double b) { return isless(a, b); }
+uint64_t _fgt(double a, double b) { return isgreater(a, b); }
+uint64_t _fle(double a, double b) { return islessequal(a, b); }
+uint64_t _fge(double a, double b) { return isgreaterequal(a, b); }
+int64_t _ftos(double a, double b) { return (int64_t)b; }
+uint64_t _ftou(double a, double b) { return (uint64_t)b; }
+double _stof(int64_t a, int64_t b) { return (double)b; }
+double _utof(uint64_t a, uint64_t b) { return (double)b; }
 
 uint64_t _fne(double a, double b) {
-  return isunordered(a,b) ? 1 : islessgreater(a,b);
+  return isunordered(a, b) ? 1 : islessgreater(a, b);
 }
 
 uint64_t _rotl(uint64_t a, uint64_t b) {
@@ -183,59 +183,59 @@ static void rewrite(Net *net, uint64_t a_addr) {
     case OP1:
       snd.u = a[1];
     switch (a[3] >> 8) {
-      case EQ:      res.u = _eq(fst.u,snd.u); break;
-      case NE:      res.u = _ne(fst.u,snd.u); break;
-      case LT_S:    res.s = _lt_s(fst.s,snd.s); break;
-      case LT_U:    res.u = _lt_u(fst.u,snd.u); break;
-      case GT_S:    res.s = _gt_s(fst.s,snd.s); break;
-      case GT_U:    res.u = _gt_u(fst.u,snd.u); break;
-      case LE_S:    res.u = _le_s(fst.s,snd.s); break;
-      case LE_U:    res.u = _le_u(fst.u,snd.u); break;
-      case GE_S:    res.u = _ge_s(fst.u,snd.u); break;
-      case GE_U:    res.u = _ge_u(fst.u,snd.u); break;
-      case CLZ:     res.u = _clz(fst.u,snd.u); break;
-      case CTZ:     res.u = _ctz(fst.u,snd.u); break;
-      case POPCNT:  res.u = _popcnt(fst.u,snd.u); break;
-      case SHL:     res.u = _shl(fst.u,snd.u); break;
-      case SHR:     res.u = _shr(fst.u,snd.u); break;
-      case SHR_S:   res.s = _shr_s(fst.s,snd.u); break;
-      case ROTL:    res.u = _rotl(fst.u,snd.u); break;
-      case ROTR:    res.u = _rotr(fst.u,snd.u); break;
-      case AND:     res.u = _and(fst.u,snd.u); break;
-      case  OR:     res.u = _or(fst.u,snd.u); break;
-      case XOR:     res.u = _xor(fst.u,snd.u); break;
-      case ADD:     res.u = _add(fst.u,snd.u); break;
-      case SUB:     res.u = _sub(fst.u,snd.u); break;
-      case MUL:     res.u = _mul(fst.u,snd.u); break;
-      case DIV_S:   res.s = _div_s(fst.s,snd.s); break;
-      case DIV_U:   res.u = _div_u(fst.u,snd.u); break;
-      case REM_S:   res.s = _rem_s(fst.s,snd.s); break;
-      case REM_U:   res.u = _rem_u(fst.u,snd.u); break;
-      case FABS:    res.f = _fabs(fst.f,snd.f); break;
-      case FNEG:    res.f = _fneg(fst.f,snd.f); break;
-      case FCEIL:   res.f = _fceil(fst.f,snd.f); break;
-      case FFLOOR:  res.f = _ffloor(fst.f,snd.f); break;
-      case FTRUNC:  res.f = _ftrunc(fst.f,snd.f); break;
-      case FNRST:   res.f = _fnrst(fst.f,snd.f); break;
-      case FSQRT:   res.f = _fsqrt(fst.f,snd.f); break;
-      case FADD:    res.f = _fadd(fst.f,snd.f); break;
-      case FSUB:    res.f = _fsub(fst.f,snd.f); break;
-      case FMUL:    res.f = _fmul(fst.f,snd.f); break;
-      case FDIV:    res.f = _fdiv(fst.f,snd.f); break;
+      case EQ:      res.u = _eq(fst.u, snd.u); break;
+      case NE:      res.u = _ne(fst.u, snd.u); break;
+      case LT_S:    res.s = _lt_s(fst.s, snd.s); break;
+      case LT_U:    res.u = _lt_u(fst.u, snd.u); break;
+      case GT_S:    res.s = _gt_s(fst.s, snd.s); break;
+      case GT_U:    res.u = _gt_u(fst.u, snd.u); break;
+      case LE_S:    res.u = _le_s(fst.s, snd.s); break;
+      case LE_U:    res.u = _le_u(fst.u, snd.u); break;
+      case GE_S:    res.u = _ge_s(fst.u, snd.u); break;
+      case GE_U:    res.u = _ge_u(fst.u, snd.u); break;
+      case CLZ:     res.u = _clz(fst.u, snd.u); break;
+      case CTZ:     res.u = _ctz(fst.u, snd.u); break;
+      case POPCNT:  res.u = _popcnt(fst.u, snd.u); break;
+      case SHL:     res.u = _shl(fst.u, snd.u); break;
+      case SHR:     res.u = _shr(fst.u, snd.u); break;
+      case SHR_S:   res.s = _shr_s(fst.s, snd.u); break;
+      case ROTL:    res.u = _rotl(fst.u, snd.u); break;
+      case ROTR:    res.u = _rotr(fst.u, snd.u); break;
+      case AND:     res.u = _and(fst.u, snd.u); break;
+      case  OR:     res.u = _or(fst.u, snd.u); break;
+      case XOR:     res.u = _xor(fst.u, snd.u); break;
+      case ADD:     res.u = _add(fst.u, snd.u); break;
+      case SUB:     res.u = _sub(fst.u, snd.u); break;
+      case MUL:     res.u = _mul(fst.u, snd.u); break;
+      case DIV_S:   res.s = _div_s(fst.s, snd.s); break;
+      case DIV_U:   res.u = _div_u(fst.u, snd.u); break;
+      case REM_S:   res.s = _rem_s(fst.s, snd.s); break;
+      case REM_U:   res.u = _rem_u(fst.u, snd.u); break;
+      case FABS:    res.f = _fabs(fst.f, snd.f); break;
+      case FNEG:    res.f = _fneg(fst.f, snd.f); break;
+      case FCEIL:   res.f = _fceil(fst.f, snd.f); break;
+      case FFLOOR:  res.f = _ffloor(fst.f, snd.f); break;
+      case FTRUNC:  res.f = _ftrunc(fst.f, snd.f); break;
+      case FNRST:   res.f = _fnrst(fst.f, snd.f); break;
+      case FSQRT:   res.f = _fsqrt(fst.f, snd.f); break;
+      case FADD:    res.f = _fadd(fst.f, snd.f); break;
+      case FSUB:    res.f = _fsub(fst.f, snd.f); break;
+      case FMUL:    res.f = _fmul(fst.f, snd.f); break;
+      case FDIV:    res.f = _fdiv(fst.f, snd.f); break;
       case FMIN:    res.f = _fmin(fst.f, snd.f); break;
       case FMAX:    res.f = _fmax(fst.f, snd.f); break;
       case FCPYSGN: res.f = _fcpysgn(fst.f, snd.f); break;
-      case FEQ:     res.u = _fne(fst.f,snd.f); break;
-      case FNE:     res.u = _fne(fst.f,snd.f); break;
-      case FLT:     res.u = _flt(fst.f,snd.f); break;
-      case FGT:     res.u = _fgt(fst.f,snd.f); break;
-      case FLE:     res.u = _fle(fst.f,snd.f); break;
-      case FGE:     res.u = _fge(fst.f,snd.f); break;
+      case FEQ:     res.u = _fne(fst.f, snd.f); break;
+      case FNE:     res.u = _fne(fst.f, snd.f); break;
+      case FLT:     res.u = _flt(fst.f, snd.f); break;
+      case FGT:     res.u = _fgt(fst.f, snd.f); break;
+      case FLE:     res.u = _fle(fst.f, snd.f); break;
+      case FGE:     res.u = _fge(fst.f, snd.f); break;
       //case EXT32_S:
-      case FTOS:   res.s = _ftos(fst.f,snd.f); break;
-      case FTOU:   res.u = _ftou(fst.f,snd.f); break;
-      case STOF:   res.f = _stof(fst.s,snd.s); break;
-      case UTOF:   res.f = _utof(fst.u,snd.u); break;
+      case FTOS:   res.s = _ftos(fst.f, snd.f); break;
+      case FTOU:   res.u = _ftou(fst.f, snd.f); break;
+      case STOF:   res.f = _stof(fst.s, snd.s); break;
+      case UTOF:   res.f = _utof(fst.u, snd.u); break;
       /* unreachable */
       default: res.u = 0; break;
       }
