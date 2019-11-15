@@ -122,6 +122,7 @@ uint64_t op_flt(double a, double b) { return isless(a, b); }
 uint64_t op_fgt(double a, double b) { return isgreater(a, b); }
 uint64_t op_fle(double a, double b) { return islessequal(a, b); }
 uint64_t op_fge(double a, double b) { return isgreaterequal(a, b); }
+uint64_t op_ext32_s(uint64_t a, uint64_t b) { return (int32_t)b; }
 int64_t op_ftos(double a, double b) { return (int64_t)b; }
 uint64_t op_ftou(double a, double b) { return (uint64_t)b; }
 double op_stof(int64_t a, int64_t b) { return (double)b; }
@@ -219,7 +220,7 @@ static void rewrite(Net *net, uint64_t a_addr) {
       case FGT:     res.u = op_fgt(fst.f, snd.f); break;
       case FLE:     res.u = op_fle(fst.f, snd.f); break;
       case FGE:     res.u = op_fge(fst.f, snd.f); break;
-      //case EXT32_S:
+      case EXT32_S: res.u = op_ext32_s(fst.u, snd.u); break;
       case FTOS:    res.s = op_ftos(fst.f, snd.f); break;
       case FTOU:    res.u = op_ftou(fst.f, snd.f); break;
       case STOF:    res.f = op_stof(fst.s, snd.s); break;
