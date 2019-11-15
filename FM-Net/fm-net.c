@@ -220,10 +220,10 @@ static void rewrite(Net *net, uint64_t a_addr) {
       case FLE:     res.u = _fle(fst.f, snd.f); break;
       case FGE:     res.u = _fge(fst.f, snd.f); break;
       //case EXT32_S:
-      case FTOS:   res.s = _ftos(fst.f, snd.f); break;
-      case FTOU:   res.u = _ftou(fst.f, snd.f); break;
-      case STOF:   res.f = _stof(fst.s, snd.s); break;
-      case UTOF:   res.f = _utof(fst.u, snd.u); break;
+      case FTOS:    res.s = _ftos(fst.f, snd.f); break;
+      case FTOU:    res.u = _ftou(fst.f, snd.f); break;
+      case STOF:    res.f = _stof(fst.s, snd.s); break;
+      case UTOF:    res.f = _utof(fst.u, snd.u); break;
       /* unreachable */
       default: res.u = 0; break;
       }
