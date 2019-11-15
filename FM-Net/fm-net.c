@@ -115,6 +115,7 @@ double _fmin(double a, double b) { return fmin(a, b); }
 double _fmax(double a, double b) { return fmax(a, b); }
 double _fcpysgn(double a, double b) { return copysign(a, b); }
 uint64_t _feq(double a, double b) { return a == b; }
+uint64_t _fne(double a, double b) { return a != b; }
 uint64_t _flt(double a, double b) { return isless(a, b); }
 uint64_t _fgt(double a, double b) { return isgreater(a, b); }
 uint64_t _fle(double a, double b) { return islessequal(a, b); }
@@ -123,10 +124,6 @@ int64_t _ftos(double a, double b) { return (int64_t)b; }
 uint64_t _ftou(double a, double b) { return (uint64_t)b; }
 double _stof(int64_t a, int64_t b) { return (double)b; }
 double _utof(uint64_t a, uint64_t b) { return (double)b; }
-
-uint64_t _fne(double a, double b) {
-  return isunordered(a, b) ? 1 : islessgreater(a, b);
-}
 
 uint64_t _rotl(uint64_t a, uint64_t b) {
   const uint64_t mask = CHAR_BIT*sizeof(b) - 1;
