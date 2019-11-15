@@ -1,7 +1,22 @@
-#include <assert.h>
-#include <math.h>
-#include <stdint.h>
-#include <limits.h>
+#ifdef __wasm__
+# define assert(x)
+# define ceil           __builtin_ceil
+# define copysign       __builtin_copysign
+# define fabs           __builtin_fabs
+# define floor          __builtin_floor
+# define isgreater      __builtin_isgreater
+# define isgreaterequal __builtin_isgreaterequal
+# define isless         __builtin_isless
+# define islessequal    __builtin_islessequal
+# define sqrt           __builtin_sqrt
+# define trunc          __builtin_trunc
+# define round(x) 0  /* XXX: need implementation for WASM */
+#else
+# include <assert.h>
+# include <math.h>
+# include <stdint.h>
+# include <limits.h>
+#endif
 
 #include "fm-net.h"
 
@@ -113,8 +128,8 @@ double op_fadd(double a, double b) { return a + b; }
 double op_fsub(double a, double b) { return a - b; }
 double op_fmul(double a, double b) { return a * b; }
 double op_fdiv(double a, double b) { return a / b; }
-double op_fmin(double a, double b) { return fmin(a, b); }
-double op_fmax(double a, double b) { return fmax(a, b); }
+double op_fmin(double a, double b) { return isless(a, b) ? a : b; }
+double op_fmax(double a, double b) { return isgreater(a, b) ? a : b; }
 double op_fcpysgn(double a, double b) { return copysign(a, b); }
 uint64_t op_feq(double a, double b) { return a == b; }
 uint64_t op_fne(double a, double b) { return a != b; }

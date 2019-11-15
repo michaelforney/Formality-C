@@ -14,5 +14,8 @@ $(FM_NET_OBJ): FM-Net/fm-net.h
 
 FM-Net/fm-net: $(FM_NET_OBJ)
 
+FM-Net/fm-net.wasm: FM-Net/fm-net.c
+	clang --target=wasm32 -nostdlib -Wl,--no-entry -Wl,--export-all $(CFLAGS) -o $@ $<
+
 clean:
-	rm -f FM-Net/fm-net $(FM_NET_OBJ)
+	rm -f FM-Net/fm-net FM-Net/fm-net.wasm $(FM_NET_OBJ)
